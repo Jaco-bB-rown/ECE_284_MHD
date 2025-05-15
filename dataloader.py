@@ -4,7 +4,7 @@ from torchvision.io import read_image, decode_image
 from torch.utils.data import Dataset
 from torchvision.ops import masks_to_boxes
 
-class ISICImageDataset(Dataset):
+class ISICMaskImageDataset(Dataset):
     def __init__(self, dir, name, transform=None, target_transform=None):
         self.img_labels = pd.read_csv(os.path.join(dir, name+"_GroundTruth.csv"))
         self.img_dir = os.path.join(dir,"Images\\",name)
