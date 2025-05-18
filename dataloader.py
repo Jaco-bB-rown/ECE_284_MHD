@@ -42,7 +42,7 @@ class ISICClassImageDataset(Dataset):
         self.img_dir = os.path.join(dir,"Images\\",name)
         self.transform = transform
         self.target_transform = target_transform
-        self.size = (256,256)
+        self.size = size
 
     def __len__(self):
         return len(self.img_labels)
