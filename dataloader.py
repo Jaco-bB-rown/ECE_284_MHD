@@ -4,6 +4,7 @@ from torchvision.io import decode_image
 from torch.utils.data import Dataset
 from torchvision.ops import masks_to_boxes
 import torchvision.transforms.v2 as v2
+import torch
 
 class ISICMaskImageDataset(Dataset):
     def __init__(self, dir, name, transform=None, target_transform=None):
@@ -11,7 +12,7 @@ class ISICMaskImageDataset(Dataset):
         self.img_dir = os.path.join(dir,"Images\\",name)
         self.mask_dir = os.path.join(dir,"Masks\\",name)
         self.transform = transform
-        self.target_transform = target_transform
+        #self.target_transform = target_transform
 
     def __len__(self):
         return len(self.img_labels)
@@ -25,8 +26,8 @@ class ISICMaskImageDataset(Dataset):
         if self.transform:
             image = self.transform(image)
             mask  = self.transform(mask)
-        if self.target_transform:
-            label = self.target_transform(label)
+        #if self.target_transform:
+        label = target_transform_rcnn(label)
         boxes = masks_to_boxes(mask)
         '''target = {}
         target["boxes"] = boxes
@@ -41,7 +42,7 @@ class ISICClassImageDataset(Dataset):
         self.bb_labels = pd.read_csv(os.path.join(dir, "Pred_bb\\"+name+"_bb_"+data_aug_type+".csv"))
         self.img_dir = os.path.join(dir,"Images\\",name)
         self.transform = transform
-        self.target_transform = target_transform
+        #self.target_transform = target_transform
         self.size = size
 
     def __len__(self):
@@ -55,6 +56,11 @@ class ISICClassImageDataset(Dataset):
         if self.transform:
             image = self.transform(image)
             image = v2.functional.resized_crop(image,top=int(y1),left=int(x1),height=int(y2-y1),width=int(x2-x1),size=self.size)
-        if self.target_transform:
-            label = self.target_transform(label)
+        #if self.target_transform:
+        label = target_transform_resnet(label)
         return image, label
+
+def target_transform_rcnn(y):
+        return torch.zeros(2, dtype=torch.int64).scatter_(dim=0, index=torch.tensor(y,dtype=torch.int64), value=1)
+def target_transform_resnet(y):
+        return torch.zeros(2, dtype=torch.float).scatter_(dim=0, index=torch.tensor(y,dtype=torch.int64), value=1)
