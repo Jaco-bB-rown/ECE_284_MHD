@@ -5,14 +5,16 @@ from torch.utils.data import Dataset
 from torchvision.ops import masks_to_boxes
 import torchvision.transforms.v2 as v2
 import torch
+from transforms import dataTransforms
 
 class ISICMaskImageDataset(Dataset):
-    def __init__(self, dir, name, transform=None, target_transform=None):
-        self.img_labels = pd.read_csv(os.path.join(dir, name+"_GroundTruth.csv"))
-        self.img_dir = os.path.join(dir,"Images\\",name)
-        self.mask_dir = os.path.join(dir,"Masks\\",name)
-        self.transform = transform
-        #self.target_transform = target_transform
+    def __init__(self, dir, name, data_aug_type="1", size = (256,256)):
+        self.img_labels = pd.read_csv(os.path.join(dir,os.path.join("Ground_Truths", name+"_GroundTruth_"+data_aug_type+".csv")))
+        self.img_dir = os.path.join(os.path.join(dir,"Images"),name)
+        self.mask_dir = os.path.join(os.path.join(dir,"Masks"),name)
+        self.transform = dataTransforms("1",size=size,mask=True)
+        self.data_transform = dataTransforms(data_aug_type,size=size,mask=True)
+        self.data_aug_type = data_aug_type
 
     def __len__(self):
         return len(self.img_labels)
@@ -23,27 +25,28 @@ class ISICMaskImageDataset(Dataset):
         mask_path = os.path.join(self.mask_dir, self.img_labels.iloc[idx, 0]+"_segmentation.png")
         mask = decode_image(mask_path)
         label = self.img_labels.iloc[idx, 1]
-        if self.transform:
-            image = self.transform(image)
-            mask  = self.transform(mask)
+        image = self.transform(image)   
+        mask  = self.transform(mask)
         #if self.target_transform:
-        label = target_transform_rcnn(label)
+        if self.data_aug_type != "1" and self.img_labels.iloc[idx, 3] == 1:#only modify specific malignant images
+            image = self.data_transform(image)
+        label = self.target_transform_rcnn(label)
         boxes = masks_to_boxes(mask)
-        '''target = {}
-        target["boxes"] = boxes
-        target["labels"] = label
-        target["masks"] = mask'''
         return image, {'masks': mask,'boxes': boxes, 'labels': label}
     
+    def target_transform_rcnn(self ,y):
+        return torch.zeros(2, dtype=torch.int64).scatter_(dim=0, index=torch.tensor(y,dtype=torch.int64), value=1)
+    
 class ISICClassImageDataset(Dataset):
-    def __init__(self, dir, name, data_aug_type, transform=None, target_transform=None, size = (256,256)):
-        self.img_labels = pd.read_csv(os.path.join(dir, name+"_GroundTruth.csv"))
+    def __init__(self, dir, name, data_aug_type = "1", size = (224,224)):
+        self.img_labels = pd.read_csv(os.path.join(dir,os.path.join("Ground_Truths", name+"_GroundTruth_"+data_aug_type+".csv")))
         #bounding box labels
-        self.bb_labels = pd.read_csv(os.path.join(dir, "Pred_bb\\"+name+"_bb_"+data_aug_type+".csv"))
-        self.img_dir = os.path.join(dir,"Images\\",name)
-        self.transform = transform
-        #self.target_transform = target_transform
+        self.bb_labels = pd.read_csv(os.path.join(dir,os.path.join( "Pred_bb", name+"_bb_"+data_aug_type+".csv")))
+        self.img_dir = os.path.join(dir,os.path.join("Images",name))
+        self.transform = dataTransforms("1", size=size, mask=False)
+        self.data_transform = dataTransforms(data_aug_type, size=size, mask=False)
         self.size = size
+        self.data_aug_type = data_aug_type
 
     def __len__(self):
         return len(self.img_labels)
@@ -53,14 +56,13 @@ class ISICClassImageDataset(Dataset):
         image = decode_image(img_path)
         x1,y1,x2,y2 = (self.bb_labels.iloc[idx,1],self.bb_labels.iloc[idx,2],self.bb_labels.iloc[idx,3],self.bb_labels.iloc[idx,4])
         label = self.img_labels.iloc[idx, 1]
-        if self.transform:
-            image = self.transform(image)
-            image = v2.functional.resized_crop(image,top=int(y1),left=int(x1),height=int(y2-y1),width=int(x2-x1),size=self.size)
+        image = self.transform(image)
+        if self.data_aug_type != "1" and self.img_labels.iloc[idx, 3] == 1:#only modify specific malignant images
+            image = self.data_transform(image)
+        image = v2.functional.resized_crop(image,top=int(y1),left=int(x1),height=int(y2-y1),width=int(x2-x1),size=self.size)
         #if self.target_transform:
-        label = target_transform_resnet(label)
+        label = self.target_transform_resnet(label)
         return image, label
 
-def target_transform_rcnn(y):
-        return torch.zeros(2, dtype=torch.int64).scatter_(dim=0, index=torch.tensor(y,dtype=torch.int64), value=1)
-def target_transform_resnet(y):
+    def target_transform_resnet(self,y):
         return torch.zeros(2, dtype=torch.float).scatter_(dim=0, index=torch.tensor(y,dtype=torch.int64), value=1)

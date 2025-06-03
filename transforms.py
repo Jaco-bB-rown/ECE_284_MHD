@@ -22,3 +22,21 @@ def dataTransforms(data_aug_type,size=(256,256), mask=True):
     
             ]
             )
+        case "2":
+            return v2.Compose(
+                [
+                    v2.RandomHorizontalFlip(p=1.0),
+                ]
+            )
+        case "3":
+            return v2.Compose(
+                [
+                    v2.RandomHorizontalFlip(p=1.0),
+                ]
+            )
+        case "4":
+            return v2.Compose(
+                [
+                    v2.RandomHorizontalFlip(p=1.0),
+                ]
+            )
