@@ -26,6 +26,7 @@ def dataTransforms(data_aug_type,size=(256,256), mask=True):
             return v2.Compose(
                 [
                     v2.RandomHorizontalFlip(p=1.0),
+                    v2.RandomVerticalFlip(p=1.0),
                 ]
             )
         case "3":

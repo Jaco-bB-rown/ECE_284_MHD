@@ -30,6 +30,7 @@ class ISICMaskImageDataset(Dataset):
         #if self.target_transform:
         if self.data_aug_type != "1" and self.img_labels.iloc[idx, 3] == 1:#only modify specific malignant images
             image = self.data_transform(image)
+            mask = self.data_transform(mask)
         label = self.target_transform_rcnn(label)
         boxes = masks_to_boxes(mask)
         return image, {'masks': mask,'boxes': boxes, 'labels': label}
@@ -38,10 +39,10 @@ class ISICMaskImageDataset(Dataset):
         return torch.zeros(2, dtype=torch.int64).scatter_(dim=0, index=torch.tensor(y,dtype=torch.int64), value=1)
     
 class ISICClassImageDataset(Dataset):
-    def __init__(self, dir, name, data_aug_type = "1", size = (224,224)):
+    def __init__(self, dir, name, data_aug_type = "1", size = (224,224),bb_data_type="1"):
         self.img_labels = pd.read_csv(os.path.join(dir,os.path.join("Ground_Truths", name+"_GroundTruth_"+data_aug_type+".csv")))
         #bounding box labels
-        self.bb_labels = pd.read_csv(os.path.join(dir,os.path.join( "Pred_bb", name+"_bb_"+data_aug_type+".csv")))
+        self.bb_labels = pd.read_csv(os.path.join(dir,os.path.join( "Pred_bb", name+"_bb_"+bb_data_type+".csv")))
         self.img_dir = os.path.join(dir,os.path.join("Images",name))
         self.transform = dataTransforms("1", size=size, mask=False)
         self.data_transform = dataTransforms(data_aug_type, size=size, mask=False)
