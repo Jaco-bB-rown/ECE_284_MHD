@@ -37,6 +37,24 @@ class ISICMaskImageDataset(Dataset):
     
     def target_transform_rcnn(self ,y):
         return torch.zeros(2, dtype=torch.int64).scatter_(dim=0, index=torch.tensor(y,dtype=torch.int64), value=1)
+class ISICMaskImageDataset_for_generation(Dataset):
+    def __init__(self, dir, name, data_aug_type="1", size = (256,256)):
+        self.img_labels = pd.read_csv(os.path.join(dir,os.path.join("Ground_Truths", name+"_GroundTruth_"+data_aug_type+".csv")))
+        self.img_dir = os.path.join(os.path.join(dir,"Images"),name)
+        self.transform = dataTransforms("1",size=size,mask=True)
+        self.data_aug_type = data_aug_type
+
+    def __len__(self):
+        return len(self.img_labels)
+
+    def __getitem__(self, idx):
+        img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0]+".jpg")
+        image = decode_image(img_path)
+        image = self.transform(image)   
+        #if self.target_transform:
+        if self.data_aug_type != "1" and self.img_labels.iloc[idx, 3] == 1:#only modify specific malignant images
+            image = self.data_transform(image)
+        return image
     
 class ISICClassImageDataset(Dataset):
     def __init__(self, dir, name, data_aug_type = "1", size = (224,224),bb_data_type="1"):
