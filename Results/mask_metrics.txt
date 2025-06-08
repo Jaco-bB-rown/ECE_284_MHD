@@ -1,0 +1,10 @@
+\begin{tabular}{lr}
+\toprule
+      Model &       Loss \\
+\midrule
+Mask-RCNN\_1 & 123.246941 \\
+Mask-RCNN\_2 & 129.122910 \\
+Mask-RCNN\_3 & 112.198112 \\
+Mask-RCNN\_4 & 129.350555 \\
+\bottomrule
+\end{tabular}
